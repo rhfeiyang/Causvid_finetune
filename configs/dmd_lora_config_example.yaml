@@ -1,0 +1,87 @@
+# DMD LoRA 配置示例
+# 这个文件展示了如何为DMD的real_score和fake_score模型配置LoRA
+
+# 基础DMD配置
+model_name: "wan"
+generator_task: "causal_video"
+generator_grad: true
+real_score_grad: false
+fake_score_grad: true
+gradient_checkpointing: true
+
+# DMD训练参数
+denoising_step_list: [0, 250, 500, 750, 999]
+num_train_timestep: 1000
+real_guidance_scale: 7.5
+denoising_loss_type: "flow"
+mixed_precision: true
+warp_denoising_step: false
+
+# 可选的基础模型checkpoints
+generator_ckpt: null  # "/path/to/generator.pth"
+real_score_ckpt: null  # "/path/to/real_score.pth"
+fake_score_ckpt: null  # "/path/to/fake_score.pth"
+
+# Real Score LoRA 配置
+real_score_lora_ckpt: "/path/to/real_score_lora.safetensors"
+real_score_lora_base_model: "model"  # 或 "dit"，取决于模型结构
+real_score_lora_target_modules: "q,k,v,o,ffn.0,ffn.2"
+real_score_lora_rank: 32
+
+# Fake Score LoRA 配置  
+fake_score_lora_ckpt: "/path/to/fake_score_lora.safetensors"
+fake_score_lora_base_model: "model"  # 或 "dit"，取决于模型结构
+fake_score_lora_target_modules: "q,k,v,o,ffn.0,ffn.2"
+fake_score_lora_rank: 32
+
+# 示例配置变体
+configurations:
+  # 1. 仅使用Real Score LoRA
+  real_score_only:
+    real_score_lora_ckpt: "/path/to/real_score_lora.safetensors"
+    real_score_lora_base_model: "model"
+    real_score_lora_target_modules: "q,k,v,o"
+    real_score_lora_rank: 16
+    # fake_score LoRA参数设为null
+    fake_score_lora_ckpt: null
+    fake_score_lora_base_model: null
+    
+  # 2. 仅使用Fake Score LoRA
+  fake_score_only:
+    # real_score LoRA参数设为null
+    real_score_lora_ckpt: null
+    real_score_lora_base_model: null
+    fake_score_lora_ckpt: "/path/to/fake_score_lora.safetensors"
+    fake_score_lora_base_model: "model"
+    fake_score_lora_target_modules: "q,k,v,o"
+    fake_score_lora_rank: 16
+    
+  # 3. 不同rank的配置
+  different_ranks:
+    real_score_lora_ckpt: "/path/to/real_score_lora_rank64.safetensors"
+    real_score_lora_base_model: "model"
+    real_score_lora_target_modules: "q,k,v,o,ffn.0,ffn.2"
+    real_score_lora_rank: 64
+    fake_score_lora_ckpt: "/path/to/fake_score_lora_rank16.safetensors"
+    fake_score_lora_base_model: "model"
+    fake_score_lora_target_modules: "q,k,v,o"
+    fake_score_lora_rank: 16
+    
+  # 4. 不同目标模块的配置
+  different_targets:
+    real_score_lora_ckpt: "/path/to/real_score_attention_only.safetensors"
+    real_score_lora_base_model: "model"
+    real_score_lora_target_modules: "q,k,v,o"  # 仅注意力层
+    real_score_lora_rank: 32
+    fake_score_lora_ckpt: "/path/to/fake_score_full_layers.safetensors"
+    fake_score_lora_base_model: "model"
+    fake_score_lora_target_modules: "q,k,v,o,ffn.0,ffn.2,norm"  # 包含归一化层
+    fake_score_lora_rank: 32
+
+# 注意事项
+notes:
+  - "确保lora_base_model与实际模型结构匹配"
+  - "lora_target_modules应与训练时的设置一致"
+  - "LoRA rank应与训练时保持一致"
+  - "检查点文件格式应为.safetensors或.pth"
+  - "确保有足够的GPU内存来加载LoRA参数" 
